@@ -501,7 +501,7 @@ _DEFAULT_TIMEOUT = {"oc": 2400, "cx": 3600}
 
 def _channels() -> dict:
     """Improver channel, resolved through core.spec.resolve_channel_model."""
-    ch = resolve_channel_model(None, None, effort="high")
+    ch = resolve_channel_model(None, None, effort=config.MODEL_REASONING_EFFORT)
     return {"proposer": ch, "selector": ch}
 
 
@@ -797,6 +797,7 @@ class JobBenchAdapter:
             "TASKS_BASE_DIR": str(self.store),
             "OPENCODE_DIR": str(config.OPENCODE_DIR),
             "MODEL_ID": config.SOLVER_MODEL_OC,
+            "VARIANT": config.MODEL_REASONING_EFFORT,
             "TIMEOUT_PER_TASK": str(t),
             "MAX_RETRIES": "2",
             "MAX_CONCURRENT": "1",

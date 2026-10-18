@@ -43,6 +43,12 @@ to `global`. Your account must have access to each configured model.
 | `HARNESS2_SOLVER_MODEL` | Executor model in OpenCode's `provider/model` format |
 | `HARNESS2_IMPROVER_MODEL` | Improver model in the same format; defaults to the executor |
 | `HARNESS2_JUDGE_MODEL` | Bare judge model ID; the adapter supplies the Vertex prefix |
+| `HARNESS2_JUDGE_BACKEND` | `api` (default) or `codex_cli` for the standalone judge adapter |
+| `HARNESS2_JUDGE_REASONING_EFFORT` | Judge effort; defaults to `low` |
+| `HARNESS2_JUDGE_TIMEOUT` | Per-call timeout in seconds; defaults to `300` |
+| `HARNESS2_JUDGE_CODEX_BIN` | Codex executable; defaults to `codex` on `PATH` |
+| `HARNESS2_JUDGE_BASE_URL` | API judge endpoint when using API connection |
+| `HARNESS2_JUDGE_API_KEY` | API judge key; falls back to `OPENAI_API_KEY` |
 | `HARNESS2_RUNS_DIR` | Output root; defaults to `runs/` |
 
 The provided configuration uses Vertex Gemini executors and judges, and supports
@@ -50,6 +56,18 @@ either Vertex Claude or Gemini as the improver. LAB also supports the upstream
 judge's direct providers when their credentials are configured. For WorkBuddy,
 setup generates the Gemini solver and judge routes from these settings; rerun
 setup after changing either model.
+
+### Standalone judge adapter
+
+`harness2-judge-call` provides an API transport (the default) and an unattended Codex CLI transport. Configure `HARNESS2_JUDGE_BACKEND=codex_cli`, `HARNESS2_JUDGE_MODEL`, and optionally `HARNESS2_JUDGE_REASONING_EFFORT`; Codex uses the existing `codex login` session. Use `HARNESS2_JUDGE_BACKEND=api` with `HARNESS2_JUDGE_BASE_URL` and `HARNESS2_JUDGE_API_KEY` (or `OPENAI_API_KEY`) to retain direct API access. `--check` validates local readiness without making a model call.
+
+Example:
+
+```sh
+printf '%s\n' '{"prompt":"Return the word PASS."}' | harness2-judge-call
+```
+
+The command accepts only the supplied prompt and optional JSON schema; it does not inspect benchmark artifacts. Benchmark-specific grading continues to use each benchmark adapter's existing grader.
 
 ### Authentication alternatives
 

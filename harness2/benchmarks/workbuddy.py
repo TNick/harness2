@@ -502,7 +502,7 @@ def _job_yaml(
     sel = "\n".join(f"    - {t}" for t in tasks)
     if substrate == "oc":
         harness = _harness_oc(fork=ws is not None)
-        hp: dict = {"OPENCODE_VARIANT": "high"}
+        hp: dict = {"OPENCODE_VARIANT": config.MODEL_REASONING_EFFORT}
         if ws is not None:
             hp["WB_HARNESS_WS"] = str(ws.resolve())
             composed = ws / "_composed" / "prompt.j2"
@@ -652,7 +652,7 @@ def run_batch(
 
 def spec_for(subset: str, substrate: str) -> BenchSpec:
     s = SUBSETS[subset]
-    channel = resolve_channel_model(None, None, effort="high")
+    channel = resolve_channel_model(None, None, effort=config.MODEL_REASONING_EFFORT)
     return BenchSpec(
         name=f"wb-{subset}",
         runs_root=config.RUNS / "wb" / subset,

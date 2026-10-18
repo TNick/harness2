@@ -100,6 +100,12 @@ SOLVER_MODEL_OC = env("HARNESS2_SOLVER_MODEL", "")
 SOLVER_MODEL_CX = env("HARNESS2_CODEX_MODEL", SOLVER_MODEL_OC.split("/", 1)[-1])
 IMPROVER_MODEL = env("HARNESS2_IMPROVER_MODEL", SOLVER_MODEL_OC)
 JUDGE_MODEL = env("HARNESS2_JUDGE_MODEL", "")
+MODEL_REASONING_EFFORT = env("HARNESS2_REASONING_EFFORT", "high")
+JUDGE_REASONING_EFFORT = env("HARNESS2_JUDGE_REASONING_EFFORT", "low")
+# Pluggable judge transport. API preserves the existing direct-connection behavior.
+JUDGE_BACKEND = env("HARNESS2_JUDGE_BACKEND", "api")
+JUDGE_TIMEOUT = env_int("HARNESS2_JUDGE_TIMEOUT", 300)
+JUDGE_CODEX_BIN = env("HARNESS2_JUDGE_CODEX_BIN", "codex")
 
 DEPENDENCY_PINS = {
     "job-bench-eval": "fa03a17f9ff662f136798a274e10011c3aa00fd0",
@@ -150,8 +156,8 @@ VERTEX_OPENAI_URL = (
     f"/locations/{VERTEX_REGION}/endpoints/openapi"
 )
 JB_JUDGE_API_BASE = env("HARNESS2_JUDGE_BASE_URL", VERTEX_OPENAI_URL if VERTEX_PROJECT else "")
-JB_JUDGE_API_KEY = env("HARNESS2_JUDGE_API_KEY", "")
-JB_JUDGE_REASONING_EFFORT = "low"
+JB_JUDGE_API_KEY = env("HARNESS2_JUDGE_API_KEY", env("OPENAI_API_KEY", ""))
+JB_JUDGE_REASONING_EFFORT = JUDGE_REASONING_EFFORT
 JB_REPORTING_JUDGE_DETAILS = ""
 JB_OBS_TRUNC = 50000
 
@@ -187,3 +193,7 @@ def validate_models(*, judge: bool = False) -> None:
             raise ConfigError("Set GOOGLE_CLOUD_PROJECT for Vertex AI")
     if judge:
         require("HARNESS2_JUDGE_MODEL", needed_by="benchmark judging")
+        if JUDGE_BACKEND not in ("api", "codex_cli"):
+            raise ConfigError("HARNESS2_JUDGE_BACKEND must be api or codex_cli")
+        if JUDGE_TIMEOUT <= 0:
+            raise ConfigError("HARNESS2_JUDGE_TIMEOUT must be positive")

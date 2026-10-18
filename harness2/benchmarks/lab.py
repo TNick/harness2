@@ -479,7 +479,7 @@ def lab_spec(substrate_name: str) -> BenchSpec:
     """The LAB BenchSpec for one substrate cell. A value, not a code path."""
     if substrate_name not in ("oc", "cx"):
         raise ValueError(f"substrate must be 'oc' or 'cx', got {substrate_name!r}")
-    channel = resolve_channel_model(None, None, effort="high")
+    channel = resolve_channel_model(None, None, effort=config.MODEL_REASONING_EFFORT)
     return BenchSpec(
         name="lab",
         runs_root=config.RUNS / "lab",
@@ -510,7 +510,7 @@ class LabAdapter:
         model: str | None = None,
         timeout: int | None = None,
         skill_mode: str = "native",
-        solver_effort: str = "high",
+        solver_effort: str = config.MODEL_REASONING_EFFORT,
         judge_model: str = JUDGE_MODEL,
         split_file: Path | None = None,
     ):
