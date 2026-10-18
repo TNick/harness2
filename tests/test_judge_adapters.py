@@ -93,6 +93,7 @@ class JudgeAdapterTests(unittest.TestCase):
         self.assertIn("--ignore-user-config", args[0])
         self.assertIn("--disable", args[0])
         self.assertIn("shell_tool", args[0])
+        self.assertNotIn("code_mode_host", args[0])
         self.assertEqual(args[0][-1], "-")
         self.assertEqual(kwargs["stdin"], __import__("subprocess").PIPE)
         self.assertEqual(got.text, "PASS")

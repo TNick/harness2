@@ -239,8 +239,6 @@ class CodexCliJudge:
                 "--disable",
                 "multi_agent",
                 "--disable",
-                "code_mode_host",
-                "--disable",
                 "view_image",
                 "--disable",
                 "image_generation",
@@ -321,6 +319,16 @@ class CodexCliJudge:
                     events.append(json.loads(line))
                 except json.JSONDecodeError:
                     raise JudgeError("invalid_output", "Codex CLI emitted malformed JSONL")
+            for event in events:
+                item = event.get("item") if isinstance(event.get("item"), dict) else {}
+                if event.get("type") == "error" or item.get("type") == "error":
+                    detail = event.get("error") or item.get("error") or item.get("message")
+                    if isinstance(detail, dict):
+                        detail = detail.get("message") or detail.get("code")
+                    if not isinstance(detail, str) or not detail.strip():
+                        detail = "Codex reported an unspecified error"
+                    detail = detail.strip().replace("\n", " ")[:240]
+                    raise JudgeError("provider", f"Codex judge error: {detail}")
             if any(e.get("type") == "turn.failed" for e in events):
                 raise JudgeError("provider", "Codex judge turn failed")
             if not any(e.get("type") == "turn.completed" for e in events):
@@ -337,7 +345,7 @@ class CodexCliJudge:
             if tool_types:
                 raise JudgeError(
                     "provider",
-                    "Codex judge emitted tool event(s): " + ", ".join(tool_types),
+                    "Codex judge emitted non-answer item(s): " + ", ".join(tool_types),
                 )
             try:
                 text = out.read_text(encoding="utf-8")
