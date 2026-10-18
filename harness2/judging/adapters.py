@@ -187,10 +187,11 @@ class CodexCliJudge:
             raise JudgeError(
                 "configuration", f"could not check Codex CLI: {type(exc).__name__}"
             ) from exc
-        if r.returncode or "--output-last-message" not in r.stdout or "--json" not in r.stdout:
+        required_flags = ("--output-last-message", "--json", "--disable")
+        if r.returncode or any(flag not in r.stdout for flag in required_flags):
             raise JudgeError(
                 "configuration",
-                "Codex CLI lacks required exec flags (--json, --output-last-message)",
+                "Codex CLI lacks required exec flags (--json, --disable, --output-last-message)",
             )
         # Login check is local and must never print tokens.
         try:
@@ -229,6 +230,20 @@ class CodexCliJudge:
                 "--ignore-rules",
                 "--sandbox",
                 "read-only",
+                "--disable",
+                "shell_tool",
+                "--disable",
+                "apps",
+                "--disable",
+                "hooks",
+                "--disable",
+                "multi_agent",
+                "--disable",
+                "code_mode_host",
+                "--disable",
+                "view_image",
+                "--disable",
+                "image_generation",
                 "--model",
                 s.model,
                 "-c",
@@ -239,20 +254,6 @@ class CodexCliJudge:
                 "project_doc_max_bytes=0",
                 "-c",
                 'approval_policy="never"',
-                "-c",
-                "features.shell_tool=false",
-                "-c",
-                "features.apps=false",
-                "-c",
-                "features.hooks=false",
-                "-c",
-                "features.multi_agent=false",
-                "-c",
-                "features.code_mode_host=false",
-                "-c",
-                "features.view_image=false",
-                "-c",
-                "features.image_generation=false",
                 "-c",
                 'web_search="disabled"',
                 "-C",
@@ -324,13 +325,20 @@ class CodexCliJudge:
                 raise JudgeError("provider", "Codex judge turn failed")
             if not any(e.get("type") == "turn.completed" for e in events):
                 raise JudgeError("invalid_output", "Codex CLI did not report a completed turn")
-            if any(
-                e.get("type", "").startswith("item.")
-                and isinstance(e.get("item"), dict)
-                and e["item"].get("type") not in {"agent_message", "reasoning"}
-                for e in events
-            ):
-                raise JudgeError("provider", "Codex judge attempted to use a tool")
+            tool_types = sorted(
+                {
+                    e["item"].get("type", "unknown")
+                    for e in events
+                    if e.get("type", "").startswith("item.")
+                    and isinstance(e.get("item"), dict)
+                    and e["item"].get("type") not in {"agent_message", "reasoning"}
+                }
+            )
+            if tool_types:
+                raise JudgeError(
+                    "provider",
+                    "Codex judge emitted tool event(s): " + ", ".join(tool_types),
+                )
             try:
                 text = out.read_text(encoding="utf-8")
             except OSError as exc:

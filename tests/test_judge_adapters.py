@@ -60,7 +60,7 @@ class JudgeAdapterTests(unittest.TestCase):
     @patch("harness2.judging.adapters.subprocess.run")
     def test_codex_check_uses_local_login_status(self, run, _which):
         run.side_effect = [
-            MagicMock(returncode=0, stdout="--json --output-last-message", stderr=""),
+            MagicMock(returncode=0, stdout="--json --output-last-message --disable", stderr=""),
             MagicMock(returncode=0, stdout="Logged in", stderr=""),
         ]
         create_judge(JudgeSettings("codex_cli", "gpt-6-luna")).check()
@@ -72,7 +72,7 @@ class JudgeAdapterTests(unittest.TestCase):
     @patch("harness2.judging.adapters.subprocess.Popen")
     def test_codex_uses_ephemeral_cwd_stdin_and_authoritative_output(self, popen, run, _which):
         run.side_effect = [
-            MagicMock(returncode=0, stdout="--json --output-last-message", stderr=""),
+            MagicMock(returncode=0, stdout="--json --output-last-message --disable", stderr=""),
             MagicMock(returncode=0, stdout="Logged in", stderr=""),
         ]
         proc = MagicMock(returncode=0)
@@ -91,11 +91,30 @@ class JudgeAdapterTests(unittest.TestCase):
         args, kwargs = popen.call_args
         self.assertIn("--ephemeral", args[0])
         self.assertIn("--ignore-user-config", args[0])
-        self.assertIn("features.shell_tool=false", args[0])
+        self.assertIn("--disable", args[0])
+        self.assertIn("shell_tool", args[0])
         self.assertEqual(args[0][-1], "-")
         self.assertEqual(kwargs["stdin"], __import__("subprocess").PIPE)
         self.assertEqual(got.text, "PASS")
         self.assertEqual(got.backend, "codex_cli")
+
+    @patch("harness2.judging.adapters.shutil.which", return_value="/usr/bin/codex")
+    @patch("harness2.judging.adapters.subprocess.run")
+    @patch("harness2.judging.adapters.subprocess.Popen")
+    def test_codex_tool_events_are_rejected_with_safe_type_diagnostic(self, popen, run, _which):
+        run.side_effect = [
+            MagicMock(returncode=0, stdout="--json --output-last-message --disable", stderr=""),
+            MagicMock(returncode=0, stdout="Logged in", stderr=""),
+        ]
+        proc = MagicMock(returncode=0)
+        proc.communicate.return_value = (
+            '{"type":"item.completed","item":{"type":"command_execution"}}\n'
+            '{"type":"turn.completed"}\n',
+            "",
+        )
+        popen.return_value = proc
+        with self.assertRaisesRegex(JudgeError, "command_execution"):
+            CodexCliJudge(JudgeSettings("codex_cli", "gpt-6-luna")).judge(JudgeRequest("prompt"))
 
     def test_empty_and_malformed_structured_output_fail(self):
         from harness2.judging.adapters import _result
