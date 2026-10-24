@@ -1,0 +1,24 @@
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+
+# Python environments, caches, and build metadata
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Local project tooling
+.serena/
+
+# Experiment outputs
+runs/
+
+# Downloaded benchmark repositories and installed runtime tools
+/dependencies/*
+!/dependencies/ASSETS.json
+!/dependencies/PINNED.md
+!/dependencies/README.md
